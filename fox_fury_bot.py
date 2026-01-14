@@ -22,16 +22,27 @@ api_app = FastAPI(title="Fox Fury API")
 
 @api_app.get("/balance/{user_id}")
 async def get_balance(user_id: int):
-    row = await get_user_data(user_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    fur, energy, max_energy, _, _, invited_count, last_bonus_date = row
-    return {
-        "fur": fur,
-        "energy": energy,
-        "max_energy": max_energy,
-        "invited_count": invited_count
-    }
+    print(f"Запрос баланса для user_id: {user_id}")
+    try:
+        row = await get_user_data(user_id)
+        print(f"Результат из базы: {row}")  # ← ключевой лог!
+        if row is None:
+            print("Пользователь не найден в БД")
+            raise HTTPException(status_code=404, detail="User not found")
+
+        fur, energy, max_energy, _, _, invited_count, last_bonus_date = row
+        print(f"Успешно: FUR={fur}, Energy={energy}, max_energy={max_energy}")
+        return {
+            "fur": fur,
+            "energy": energy,
+            "max_energy": max_energy,
+            "invited_count": invited_count
+        }
+    except Exception as e:
+        print(f"Критическая ошибка в get_balance: {str(e)}")
+        import traceback
+        traceback.print_exc()  # ← полный стек-трейс в логах
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_app.post("/tap")
@@ -260,7 +271,7 @@ async def main():
     dp = Dispatcher()
     dp.include_router(router)
 
-    print("Запуск API на http://localhost:8000...")
+    print("Запуск API на https://fox-fury-bot.onrender.com")
     asyncio.create_task(run_api())
 
     print("Запуск polling... (бот теперь должен работать)")
